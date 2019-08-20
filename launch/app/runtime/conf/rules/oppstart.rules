@@ -1,0 +1,43 @@
+
+
+rule "Startup defaults"
+when
+    System started
+then
+// Defaults
+    postUpdate(hjemme, ON)
+    postUpdate(preheat, OFF)
+    postUpdate(sovemodus, OFF)
+    postUpdate(sovemodus2, OFF)
+    postUpdate(nattlys, OFF)
+    postUpdate(stueTemp, 22.0)
+    postUpdate(autoLys, ON)
+    postUpdate(ekstraLys, OFF)
+    postUpdate(ganglys, ON)
+    postUpdate(stueCpuFold, ON)
+    postUpdate(stueGpuFold, ON)
+    postUpdate(ekstraOppvarming, OFF)
+    postUpdate(stueKaldere, OFF)
+    postUpdate(stueLittKaldere, OFF)
+    postUpdate(stueEffekt, 0)
+    postUpdate(alarm, OFF)
+    postUpdate(alarmLyd, ON)
+    postUpdate(soveromLyd, OFF)
+    postUpdate(kino, OFF)
+    postUpdate(stOppTid, 510)
+    postUpdate(party, OFF)
+    postUpdate(sovLys1niv, 10)
+    postUpdate(sovLys2niv, 10)
+    postUpdate(ikkeSlavSovLys, ON)
+    postUpdate(tvLys, new PercentType(100))
+    var erSommer = now.getMonthOfYear() > 4 && now.getMonthOfYear() < 10;
+    if (erSommer) {
+    	postUpdate(sommer,  ON)
+        postUpdate(stueVarmeovn, OFF)
+	} 
+	else {
+		postUpdate(sommer,  OFF)
+        postUpdate(stueVarmeovn, ON)
+	}
+	postUpdate(skjermModus, "OFF")
+end

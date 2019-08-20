@@ -1,0 +1,126 @@
+import org.joda.time.DateTime
+import org.joda.time.Duration
+
+// Temperaturstyring
+// Var vv 4
+var effektKonstant = 900 // W / (*C x s) 
+//var gjenvaerendeKoeffisient = 0.0001 // W/(W*s)
+var MAX_EFFEKT = 2000.0
+var KALDERE = 2
+var LITT_KALDERE = 1.0
+
+rule "Kjapp boost effekt inn"
+when
+    Item stueKaldere changed to OFF
+then
+    if (serialmultifunction_temperature_decimal_2f262f15_temperature.state < stueTemp.state) {
+        postUpdate(stueEffekt, MAX_EFFEKT)
+    }
+end
+
+rule "Oppvarming hovedkontroll"
+when
+	Time cron "15 * * * * ?" or
+    Item ekstraOppvarming changed to ON
+then
+
+	var forrigeEffekt = stueEffekt.state as DecimalType
+	var temp1 = serialmultifunction_temperature_decimal_2f262f15_temperature.state as Number
+	var temp2 = serialmultifunction_temperature_decimal_dde2ff78_temperature.state as Number
+    var temp = temp1 // (0.7 * temp1 + 0.3 * temp2)
+	var tempMaal = stueTemp.state as DecimalType
+	// Ute, sover, etc.
+    var ikkeOvn = false
+	if (stueKaldere.state == ON && preheat.state == OFF) {
+		tempMaal = new DecimalType(tempMaal.doubleValue - KALDERE)
+        if (hjemme.state == OFF) {
+            ikkeOvn = true
+        }
+	}
+	if (stueLittKaldere.state == ON) {
+		tempMaal = new DecimalType(tempMaal.doubleValue - LITT_KALDERE)
+	}
+	
+    var differens = (tempMaal - temp)
+	var korreksjon = differens * effektKonstant * 30 // sekunder
+	var oppdatertEffekt = (forrigeEffekt + korreksjon).doubleValue
+    if (differens > 4) {
+        ikkeOvn = false
+    }
+	
+	// Ekstra oppvarming: full guffe
+	if (ekstraOppvarming.state == ON && temp < (tempMaal + 1.0)) {
+		oppdatertEffekt = MAX_EFFEKT
+	}
+	
+	var gjenvaerende = oppdatertEffekt
+	
+	// I rekkefølge for prioritet
+	// CPU og GPU!
+	if ((gjenvaerende >= 600 && stueCpuFold.state == ON) || kjorPcAlltid.state == ON) {
+		//sendCommand(folding_slot_a1f4b553_run, ON)
+        executeCommandLine("supervisorctl@@start@@xmr")
+		gjenvaerende -= 600
+	}
+	//else if (folding_slot_a1f4b553_run.state == ON) {
+    else {
+		//sendCommand(folding_slot_a1f4b553_run, OFF)
+        executeCommandLine("supervisorctl@@stop@@xmr")
+	}
+	
+	// Varmeovn
+	if (gjenvaerende >= 1200 && stueVarmeovn.state == ON && !ikkeOvn) {
+	    if (serialmultifunction_on_off_code_3a3e941d_switch.state != ON) {
+		  sendCommand(serialmultifunction_on_off_code_3a3e941d_switch, ON)
+		}
+		gjenvaerende -= 1150
+	}
+	else if (serialmultifunction_on_off_code_3a3e941d_switch.state != OFF && gjenvaerende < 1150) {
+		sendCommand(serialmultifunction_on_off_code_3a3e941d_switch, OFF)
+	}
+	
+	//var gjenvLedd = gjenvaerende * gjenvaerendeKoeffisient * sekunder
+	//var nyEffekt = Math.round(Math.max(Math.min(oppdatertEffekt + gjenvLedd, MAX_EFFEKT), 0))
+	var nyEffekt = Math.round(Math.max(Math.min(oppdatertEffekt, MAX_EFFEKT), 0))
+	postUpdate(stueEffekt, nyEffekt as Number)
+end
+
+// Kjapp GPU / CPU avskruing
+rule "CPU av"
+when
+	Item stueCpuFold received command
+then
+	if (receivedCommand == OFF){
+		sendCommand(folding_slot_a1f4b553_run, OFF)
+	}
+end
+
+rule "GPU av"
+when
+	Item stueGpuFold received command
+then
+	if (receivedCommand == OFF){
+		sendCommand(folding_slot_aa436d19_run, OFF)
+	}
+end	
+
+rule "Ovn av"
+when
+	Item stueVarmeovn received command
+then
+	if (receivedCommand == OFF){
+		sendCommand(serialmultifunction_on_off_code_3a3e941d_switch, OFF)
+	}
+end
+
+rule "Morgen"
+when
+	Time cron "0 0 6 * * ?"
+then
+	if (hjemme.state == ON) {
+		sendCommand(stueLittKaldere, OFF)
+	}
+end
+
+
+

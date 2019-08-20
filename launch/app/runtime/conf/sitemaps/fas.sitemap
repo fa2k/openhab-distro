@@ -1,0 +1,66 @@
+sitemap fas label="Fas"
+{
+    Frame label="Hoved" {
+        Switch item=hjemme
+        Switch item=sovemodus icon="bedroom"
+        Switch item=sovemodus2
+        Switch item=preheat 
+        Switch item=party
+        Switch item=enStoOpp
+    }
+    Frame label="Vekkerklokke" {
+	    Switch item=alarm
+	    Text item=stOppVis
+	    Setpoint item=stOppTid minValue=0 maxValue=1440 step=15
+	    Switch item=alarmLyd
+    }
+    Frame label="Lys" {
+        Slider item=lysNiv
+        Switch item=autoLys
+        Switch item=ekstraLys
+        Switch item=leselys
+        Switch item=nattlys
+        Switch item=stueLys label="Stue lys"
+        Switch item=ganglys label="Gang lys"
+        Switch item=soveromLys label="Soverom lys"
+    }
+    Frame label="Media" {
+        Slider item=rotelra1x_amp_12ceea8e_volume label="Volum"
+        Switch item=rotelra1x_amp_12ceea8e_mute label="Mute"
+        Switch item=rotelra1x_amp_12ceea8e_power label="Forsterker" icon="switch"
+        Switch item=lgtvserial_lgtv_d51c3883_power label="TV" icon="grass"
+        Switch item=kino label="Kino" icon="cinema"
+        Switch item=lgtvserial_lgtv_d51c3883_input2 label="TV kilde" mappings=[ "90"="HDMI1", "91"="HDMI2", "92"="HDMI3" ] icon="water"
+        Switch item=soveromLyd label="Soverom lyd"
+        Slider item=lgtvserial_lgtv_d51c3883_volume label="TV Volum"
+        Switch item=rotelra1x_amp_12ceea8e_source label="Audio input" mappings=[ "opt1"="PC", "usb"="BT", "opt2"="TV" ]
+    }
+    Frame label="Varme" {
+        Setpoint item=stueTemp minValue=16 maxValue=28 step=0.5
+        Switch item=serialmultifunction_on_off_code_8dac37af_switch label="Varmeovn soverom"
+        
+        Switch item=ekstraOppvarming
+        
+        Switch item=stueCpuFold
+        Switch item=kjorPcAlltid
+        Switch item=badmine
+        Switch item=stueVarmeovn
+        Text item=serialmultifunction_temperature_decimal_2f262f15_temperature label="Stue temp"
+        Text item=serialmultifunction_temperature_decimal_dde2ff78_temperature label="PC innsug"
+        Text item=mqtt_topic_a0cc65bd_sovTemp label="Soverom temp"
+
+        Text item=stueEffekt
+        Switch item=stueKaldere
+        Switch item=stueLittKaldere
+    }
+    Frame label="Annet" {
+        Switch item=sommer
+        Switch item=serialmultifunction_on_off_code_7efa7ce6_switch label="Stjerne"
+        Switch item=serialmultifunction_on_off_code_d0fb8276_switch label="Juletre"
+        Switch item=sovLys1paa
+        Slider item=mqtt_topic_a0cc65bd_sovLys1niv
+        Switch item=mqtt_topic_a0cc65bd_sovLys2paa
+        Slider item=mqtt_topic_a0cc65bd_sovLys2niv
+        Switch item=ikkeSlavSovLys
+    }
+}

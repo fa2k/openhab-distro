@@ -1,0 +1,89 @@
+String FlicButtonSingle
+String FlicButtonDouble
+String FlicButtonLong
+String FlicButton2Single
+String FlicButton2Double
+String FlicButton2Long
+String FlicAction1
+Switch mobilInne
+
+// Kontroll items
+Switch hjemme "Hjemme" <present>
+Switch preheat "Forhåndsoppvarm" <heating>
+Switch sovemodus "Sovemodus 1" <moon>
+Switch sovemodus2 "Sovemodus 2" <moon>
+Switch nattlys "Nattlys" <moon>
+String stOppVis "Tid [%s]" <clock>
+Number stOppTid "Stå opp innen" <clock>
+Switch alarm "Vekkerklokke" <alarm>
+Switch alarmLyd "Lyd" <alarm>
+Switch soveromLyd "Lyd på soverom" <sound>
+Switch stueCpuFold "Tillat CPU folding" <heating>
+Switch stueGpuFold "Tillat GPU folding" <heating>
+Switch badmine "Bad mine"
+Switch stueVarmeovn "Tillat varmeovn stue" <heating>
+//Switch sovVarmeovn "Tillat varmeovn soverom" <heating>
+Switch ekstraOppvarming "Ekstra oppvarming" <heating>
+Switch stueKaldere "Stue kaldere" <climate>
+Switch stueLittKaldere "Stue litt kaldere" <climate>
+Number stueTemp "Sett stuetemperatur [%4.1f]" <temperature>
+//Number sovTemp "Sett soveromstemperatur" <temperature>
+Switch autoLys "Automatisk lysnivå" <pie>
+
+Switch stueLys "Stue lys" <light>
+Switch soveromLys "Soverom lys" <light>
+Number soveromOvergang "Soverom overgang (ms)"
+Switch ganglys "Ganglys" <light>
+Switch julelys "Stjerne" <light>
+
+Dimmer lysNiv "Lysnivå" <light>
+Dimmer dagLysNiv "Lysnivå dag" <light>
+Dimmer tvLys "TV lys"
+String tvFargetemp "TV fargetemp"
+//Dimmer varmeEffekt "Oppvarmingseffekt" <heating>
+Switch ekstraLys "Ekstra lys" <light>
+Switch leselys "Leselys stue" <light>
+Switch sommer "Sommer" <sun>
+Switch kino "Kino" <movie>
+
+
+// Intern tilstand
+Number stueEffekt "Oppvarmingseffekt [%4.0f W]" <energy>
+
+// Ting
+Number innsugTemp "Temperatur PC innsug" <temperature>
+Number utblasTemp "Temperatur PC utblås" <temperature>
+Switch stueGpuFoldRun "Stue GPU folding" <heating>
+Switch stueCpuFoldRun "Stue CPU folding" <heating>
+Switch kjorPcAlltid "Alltid kjør PC"
+
+//Number serialmultifunction_temperature_dde2ff78_temperature
+
+Switch party "Party mode"
+
+
+// Art-Net Configuration Parameters
+// Stue over - 7212ca3b - IP=192.168.1.224 FIRST_UNIVERSE=1 N_DOT=904
+
+
+// SerialMultifunction
+// SwitchCode - Getboks - f1953051 - FN=3 CODE=122430CF
+// Temp              - PC innsug - dde2ff78_- FN=128
+// Temp              - PC utblås - xxxxxxxx - FN=129
+// Temp              - PC innsug - 2f262f15 - FN=130
+// InputSwitch       - Stue PIR  - 0fb1b33b - FN=64
+// InputSwitch       - Ikke brann- 3ab02c31 - FN=65
+// SwitchCode        - Varmeovn stue-3a3e941d-FN=4 - ON_CODE=00929D36000D0100 - OFF_CODE=00929D36000D0000
+// SwitchCode        - Varmeovn soverom-8dac37af-FN=4 ON_CODE=00929D36000C0100 OFF_CODE=00929D36000C0000
+// CodeReceiver      - RF kode - 57b6328c - FN=4
+
+Dimmer gjeldendeVolum <sound>
+Switch gjeldendeMute <sound>
+Switch tvKontroll "TV"
+Switch tvPower "TV"
+Switch toggleKino "Toggle kino"
+
+Switch ikkeSlavSovLys "Ikke slå av/på soverom lys"
+Switch enStoOpp "En stå opp"
+
+

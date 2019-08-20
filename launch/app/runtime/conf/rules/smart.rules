@@ -1,0 +1,404 @@
+var dknappBlok = false
+var kommerInn = false
+
+
+rule "Går ut med mobilen"
+when
+	Item mobilInne changed from ON to OFF
+then
+    if (hjemme.state != OFF && sovemodus.state != ON) {
+	   //sendCommand(hjemme, OFF)
+	}
+end
+
+
+rule "Kommer inn med mobilen (treg)"
+when
+	Item mobilInne changed from OFF to ON
+then
+	if (hjemme.state != ON) {
+		//sendCommand(hjemme, ON)
+	}
+end
+
+rule "Gaar inn"
+when
+    Item hjemme received command
+then
+    if (receivedCommand == ON) {
+        sendCommand(stueKaldere, OFF)
+        postUpdate(preheat, OFF)
+        sendCommand(stueLys, ON)
+        sendCommand(ganglys, ON)
+        if (now.getHourOfDay() <= 23 && now.getHourOfDay() > 7) {
+            sendCommand(rotelra1x_amp_12ceea8e_power, ON)
+        }
+        if (now.getHourOfDay() > 7) {
+            //sendCommand(lgtvserial_lgtv_d51c3883_power, ON)
+            sendCommand(tvKontroll, ON)
+        }
+        // Stjerne
+        sendCommand(julelys, ON)
+        // Soverom varmeovn
+        //sendCommand(serialmultifunction_on_off_code_8dac37af_switch, ON)
+
+        if (ikkeSlavSovLys.state == ON) {
+            sendCommand(soveromLys, ON)
+            sendCommand(skjermModus, new StringType("KLOKKE"))
+        }
+        
+        var colors = newArrayList(lifx_colorlight_D073D5120452_color, lifx_colorlight_D073D5016C1E_color)
+        var sat = new PercentType(8)
+        colors.forEach[ element, index |
+            var PercentType bright = lysNiv.state
+            var DecimalType hue2 = new DecimalType(360 * Math.random())
+            var HSBType col2 = new HSBType(hue2, sat, bright)
+            sendCommand(element, col2 as HSBType)
+            
+        ]
+        colors = newArrayList(yeelight_wonder_0x0000000005384e52_color)
+        sat = new PercentType(25)
+        colors.forEach[ element, index |
+            var PercentType bright = lysNiv.state
+            var DecimalType hue2 = new DecimalType(360 * Math.random())
+            var HSBType col2 = new HSBType(hue2, sat, bright)
+            sendCommand(element, col2 as HSBType)
+            
+        ]
+    }
+    else if (receivedCommand == OFF) {
+        executeCommandLine("gnome-screensaver-command@@-l")
+        sendCommand(sovemodus, OFF)
+        sendCommand(stueKaldere, ON)
+        sendCommand(rotelra1x_amp_12ceea8e_power, OFF)
+        // Soverom
+        sendCommand(serialmultifunction_on_off_code_8dac37af_switch, OFF)
+        sendCommand(ganglys, OFF)
+        sendCommand(stueLys, OFF)
+        sendCommand(soveromLys, OFF)
+        
+        postUpdate(autoLys, ON)
+        postUpdate(ekstraLys, OFF)
+        postUpdate(leselys, OFF)
+        postUpdate(kino, OFF)
+        sendCommand(soveromLyd, OFF)
+        sendCommand(lgtvserial_lgtv_d51c3883_power, OFF)
+        sendCommand(badmine, ON)
+    }
+end
+
+rule "Dør åpen"
+when 
+    Item inngangsdoor changed to OPEN
+then
+    if (party.state != ON) {
+        if (hjemme.state == ON) {
+            if (dknappBlok != true) {
+                if (enStoOpp.state == ON) {
+                    /*var PercentType sat = new PercentType(100)
+                    var DecimalType hue2 = new DecimalType(150)
+                    var PercentType bright = lysNiv.state
+                    var HSBType col2 = new HSBType(hue2, sat, bright)
+                    sendCommand(yeelight_wonder_0x0000000005384e52_color, col2)*/
+                    dknappBlok = true
+                    postUpdate(enStoOpp, OFF)
+                    sendCommand(nattlys, OFF)
+                }
+                else if (sovemodus.state == ON) { // Intruder alert
+                    executeCommandLine("pushover.py@@ALARM: Intruder alert!!!@@1")
+                    sendCommand(ganglys, ON)
+                    sendCommand(stueLys, ON)
+                    sendCommand(soveromLys, ON)
+                    var lev = new PercentType(100)
+                    sendCommand(lysNiv, lev)
+                    sendCommand(skjermModus, new StringType("KLOKKE"))
+                    executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+                    executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+                    executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+                    executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+                }
+                else {
+                    sendCommand(yeelight_wonder_0x0000000005384e52_color, ON)
+                    postUpdate(ganglys, ON)
+                    var PercentType sat = new PercentType(80)
+                    var DecimalType hue2 = new DecimalType(0)
+                    var PercentType bright = lysNiv.state
+                    var HSBType col2 = new HSBType(hue2, sat, bright)
+                    sendCommand(yeelight_wonder_0x0000000005384e52_color, col2)
+                }
+            }
+        }
+        else {
+            sendCommand(hjemme, ON)
+            kommerInn = true
+             executeCommandLine("pushover.py@@Noen kom inn " + now.toLocalTime().toString("HH:mm"))
+        }
+    }
+end
+
+rule "Dør lukket"
+when 
+    Item inngangsdoor changed to CLOSED
+then
+    if (party.state != ON) {
+        if (!kommerInn) {
+            var PercentType sat = new PercentType(25)
+            var DecimalType hue2 = new DecimalType(360 * Math.random())
+            var PercentType bright = lysNiv.state
+            var HSBType col2 = new HSBType(hue2, sat, bright)
+            sendCommand(yeelight_wonder_0x0000000005384e52_color, col2)
+        }
+        
+        if (dknappBlok != true && kommerInn != true) {
+            if (hjemme.state == ON && sovemodus.state != ON) {
+                sendCommand(hjemme, OFF)
+            }
+        }
+        else if (dknappBlok) {
+            dknappBlok = false
+        }
+        kommerInn = false
+    }
+end
+
+
+rule "Knappelapp"
+when
+    Item gangKnapp received command
+then
+    postUpdate(party, OFF)
+    sendCommand(yeelight_wonder_0x0000000005384e52_color, ON)
+    postUpdate(ganglys, ON)
+    if (dknappBlok == true || kommerInn == true) {
+        if (inngangsdoor.state == OPEN) {
+            var PercentType sat = new PercentType(80)
+            var DecimalType hue2 = new DecimalType(0)
+            var PercentType bright = lysNiv.state
+            var HSBType col2 = new HSBType(hue2, sat, bright)
+            sendCommand(yeelight_wonder_0x0000000005384e52_color, col2)
+        }
+        else {
+            var PercentType sat = new PercentType(25)
+            var DecimalType hue2 = new DecimalType(360 * Math.random())
+            var PercentType bright = lysNiv.state
+            var HSBType col2 = new HSBType(hue2, sat, bright)
+            sendCommand(yeelight_wonder_0x0000000005384e52_color, col2)
+        }
+        kommerInn = false
+        dknappBlok = false
+    }
+    else {
+        var PercentType sat = new PercentType(100)
+        var DecimalType hue2 = new DecimalType(150)
+        var PercentType bright = lysNiv.state
+        var HSBType col2 = new HSBType(hue2, sat, bright)
+        sendCommand(yeelight_wonder_0x0000000005384e52_color, col2)
+        dknappBlok = true
+    }
+end
+
+
+rule "Kino paa lys bak"
+when 
+    Item kino changed to ON
+then
+    sendCommand(artnet_node_7212ca3b_color, OFF)
+    sendCommand(artnet_node_c892f059_color, OFF)
+end
+
+rule "Kino av"
+when 
+    Item kino changed to OFF
+then
+    sendCommand(stueLys, ON)
+end
+
+rule "Sett forsterker utgang"
+when
+    Item rotelra1x_amp_12ceea8e_power changed to ON
+then
+    executeCommandLine("pacmd@@set-card-profile@@alsa_card.pci-0000_07_00.0@@output:iec958-stereo+input:analog-stereo")
+    Thread.sleep(200)
+    executeCommandLine("pacmd@@set-default-sink@@alsa_output.pci-0000_07_00.0.iec958-stereo")
+    executeCommandLine("pactl@@--@@set-sink-mute@@alsa_output.pci-0000_07_00.0.iec958-stereo@@0")    
+end
+
+rule "Sett hodetlf utgang"
+when
+    Item rotelra1x_amp_12ceea8e_power changed to OFF
+then
+    executeCommandLine("pacmd@@set-card-profile@@alsa_card.pci-0000_07_00.0@@output:analog-stereo+input:analog-stereo")
+    Thread.sleep(200)
+    executeCommandLine("pacmd@@set-default-sink@@alsa_output.pci-0000_07_00.0.analog-stereo")
+end
+
+rule "Soverom lyd"
+when
+    Item soveromLyd changed to OFF
+then
+    executeCommandLine("/home/fa2k/bin/set-stue-sink.sh")
+end
+
+rule "Soverom lyd på"
+when
+    Item soveromLyd changed to ON
+then
+    executeCommandLine("/home/fa2k/bin/set-sound-sink.sh@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo")
+end
+
+
+rule "Stjerne av kl 23 hvis ikke hjemme"
+when
+    Time cron "0 0 23 * * ?"
+then
+    if (hjemme.state == OFF) {
+        sendCommand(julelys, OFF)
+    }
+end
+
+rule "Volumkontroll"
+when
+    Item gjeldendeVolum received command
+then
+    //if (lgtvserial_lgtv_d51c3883_input.state == "92" &&
+    //    lgtvserial_lgtv_d51c3883_power.state == ON) {
+    //    var currentVol = lgtvserial_lgtv_d51c3883_volume.state as PercentType
+    //    if (receivedCommand == INCREASE) {
+    //        sendCommand(lgtvserial_lgtv_d51c3883_volume, currentVol + 1)
+    //    }
+    //    else if (receivedCommand == DECREASE) {
+    //        sendCommand(lgtvserial_lgtv_d51c3883_volume, currentVol - 1)
+    //    }
+    //}
+    if (rotelra1x_amp_12ceea8e_power.state == ON) {
+        sendCommand(rotelra1x_amp_12ceea8e_volume, receivedCommand)
+    }
+    else {
+        if (receivedCommand == DECREASE) {
+            executeCommandLine("pactl@@--@@set-sink-volume@@alsa_output.pci-0000_07_00.0.analog-stereo@@-2%")
+        }
+        else if (receivedCommand == INCREASE) {
+            executeCommandLine("pactl@@--@@set-sink-volume@@alsa_output.pci-0000_07_00.0.analog-stereo@@+2%")
+        }
+    }
+end    
+
+rule "tv av po"
+when
+    Item tvKontroll received command
+then
+    if (receivedCommand == ON) {
+        if (lgtvserial_lgtv_d51c3883_power.state == ON && lgtvserial_lgtv_d51c3883_input2.state == "90") {
+            sendCommand(lgtvserial_lgtv_d51c3883_input2, "92")
+            sendCommand(badmine, ON)
+        }
+        else if (lgtvserial_lgtv_d51c3883_power.state == ON) {
+            sendCommand(lgtvserial_lgtv_d51c3883_input2, "91")
+            sendCommand(badmine, ON)
+        }
+        else {
+            sendCommand(lgtvserial_lgtv_d51c3883_power, ON)
+            if (lgtvserial_lgtv_d51c3883_input2.state == "90") {
+                sendCommand(badmine, OFF)
+            }
+        }
+    }
+    else if (receivedCommand == OFF) {
+        if (lgtvserial_lgtv_d51c3883_input2.state == "91") {
+            sendCommand(lgtvserial_lgtv_d51c3883_input2, "92")
+            sendCommand(badmine, ON)
+        }
+        else if (lgtvserial_lgtv_d51c3883_input2.state == "92") {
+            sendCommand(lgtvserial_lgtv_d51c3883_input2, "90")
+            sendCommand(badmine, OFF)
+        }
+        else {
+            sendCommand(lgtvserial_lgtv_d51c3883_power, OFF)
+            sendCommand(badmine, ON)
+	    }
+    }
+end
+
+
+rule "Automat TV forsterker"
+when
+    Item lgtvserial_lgtv_d51c3883_input changed or
+    Item lgtvserial_lgtv_d51c3883_power changed
+then
+    if (lgtvserial_lgtv_d51c3883_power.state == ON && (
+            lgtvserial_lgtv_d51c3883_input2.state == "91" ||
+            lgtvserial_lgtv_d51c3883_input2.state == "92")
+        ) {
+        sendCommand(rotelra1x_amp_12ceea8e_source, "opt2")
+    }
+    else {
+        sendCommand(rotelra1x_amp_12ceea8e_source, "opt1")
+    }
+end
+
+
+rule "Automat TV dekoder"
+when
+    Item lgtvserial_lgtv_d51c3883_input2 changed or
+    Item lgtvserial_lgtv_d51c3883_power changed
+then
+    if (lgtvserial_lgtv_d51c3883_power.state == ON && lgtvserial_lgtv_d51c3883_input2.state == "92") {
+        if (serialmultifunction_on_off_code_f1953051_switch.state != ON) {
+            sendCommand(serialmultifunction_on_off_code_f1953051_switch, ON)
+        }
+    }
+    else {
+        if (serialmultifunction_on_off_code_f1953051_switch.state == ON) {
+            sendCommand(serialmultifunction_on_off_code_f1953051_switch, OFF)
+        }
+    }
+end
+
+
+rule "Mute"
+when
+    Item gjeldendeMute received command
+then
+    if (rotelra1x_amp_12ceea8e_power.state == ON) {
+        if (rotelra1x_amp_12ceea8e_mute.state == ON) {
+            sendCommand(rotelra1x_amp_12ceea8e_mute, OFF)
+        }
+        else {
+            sendCommand(rotelra1x_amp_12ceea8e_mute, ON)
+        }
+    }
+    else {
+        executeCommandLine("pactl@@--@@set-sink-mute@@alsa_output.pci-0000_07_00.0.analog-stereo@@toggle")
+    }
+end    
+
+rule "tv av po"
+when
+    Item lgtvserial_lgtv_d51c3883_power received command
+then
+    if (receivedCommand == OFF && lgtvserial_lgtv_d51c3883_power.state != OFF) {
+        executeCommandLine("gnome-screensaver-command@@-a")
+    }
+end
+
+
+rule "kino av po"
+when
+    Item toggleKino received command
+then
+    if (kino.state == ON) {
+        sendCommand(kino, OFF)
+    }
+    else {
+        sendCommand(kino, ON)
+    }
+end
+
+rule "badmine"
+when
+    Item badmine received command
+then
+    executeCommandLine("/home/fa2k/bin/badmine@@" + receivedCommand.toString().toLowerCase())
+end
+
+

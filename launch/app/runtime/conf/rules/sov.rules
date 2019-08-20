@@ -1,0 +1,234 @@
+var DateTime alarmTid = null
+var DateTime preAlarmTid = null
+var alarmFil = "/ypool/intermediate/fa2k/Music/Daft Punk/4331630_Get_Lucky_feat__Pharrell_Williams_Radio_Edit.aiff"
+var MORGEN_FARGTEMP = new DecimalType(4000.0)
+var preAlarmTrig = false
+var alarmFlagg = false
+
+
+rule "startup"
+when
+    System started
+then
+    alarmTid = now
+    preAlarmTid = now
+end
+
+rule "Sovemodus"
+when 
+    Item sovemodus changed to ON
+then
+    alarmFlagg = false
+    if (sommer.state == OFF) {
+        sendCommand(serialmultifunction_on_off_code_8dac37af_switch, ON)
+    }
+    postUpdate(dagLysNiv, lysNiv.state)
+    sendCommand(rotelra1x_amp_12ceea8e_power, OFF)
+    sendCommand(stueLys, OFF)
+    sendCommand(ganglys, OFF)
+    sendCommand(skjermModus, "OFF")
+    postUpdate(ekstraLys, OFF)
+    postUpdate(leselys, OFF)
+    postUpdate(kino, OFF)
+    sendCommand(lifx_colorlight_D073D5016C1E_color, ON)
+    sendCommand(sovLys1paa, ON)
+    sendCommand(sovLys2paa, ON)
+    executeCommandLine("gnome-screensaver-command@@-a")
+    if (lgtvserial_lgtv_d51c3883_input2.state != "90") {
+        sendCommand(lgtvserial_lgtv_d51c3883_input2, "90")
+    }
+    Thread.sleep(5000)
+    sendCommand(lgtvserial_lgtv_d51c3883_power, OFF)
+    sendCommand(badmine, ON)
+    //postUpdate(kjorPcAlltid, ON)
+end 
+
+rule "Sovemodus 2"
+when 
+    Item sovemodus2 changed to ON
+then
+    if (sovemodus.state != ON) {
+        postUpdate(sovemodus, ON)
+    }
+    if (sommer.state == OFF) {
+        sendCommand(stueLittKaldere, ON)
+    }
+    sendCommand(lifx_colorlight_D073D5016C1E_color, OFF)
+    sendCommand(stueLys, OFF)
+    sendCommand(ganglys, OFF)
+    sendCommand(lgtvserial_lgtv_d51c3883_power, OFF)
+    postUpdate(autoLys, ON)
+    postUpdate(nattlys, OFF)
+    sendCommand(sovLys1overgang, new DecimalType(20000) as Number)
+    sendCommand(sovLys1niv, new DecimalType(0) as Number)
+    sendCommand(sovLys1paa, OFF)
+    sendCommand(sovLys2overgang, new DecimalType(20000) as Number)
+    sendCommand(sovLys2niv, new DecimalType(0) as Number)
+    sendCommand(sovLys2paa, OFF)
+    sendCommand(skjermModus, "OFF")
+    sendCommand(julelys, OFF)
+end 
+
+
+rule "Sovemodus 2 av"
+when 
+    Item sovemodus2 received command
+then
+    if (hjemme.state == ON && receivedCommand == OFF) {
+        sendCommand(lifx_colorlight_D073D5016C1E_temperature, MORGEN_FARGTEMP)
+        sendCommand(lifx_colorlight_D073D5016C1E_color, dagLysNiv.state as Number)
+    
+        sendCommand(lifx_colorlight_D073D5120452_temperature, MORGEN_FARGTEMP)
+        sendCommand(lifx_colorlight_D073D5120452_color, dagLysNiv.state as Number)
+
+        sendCommand(sovLys1niv, dagLysNiv.state as Number)
+        sendCommand(sovLys1overgang, new DecimalType(1000000) as Number)
+        sendCommand(sovLys1paa, ON)
+        sendCommand(sovLys2niv, dagLysNiv.state as Number)
+        sendCommand(sovLys2overgang, new DecimalType(1000000) as Number)
+        sendCommand(sovLys2paa, ON)
+        sendCommand(skjermModus, new StringType("KLOKKE"))
+        postUpdate(enStoOpp, OFF)
+    }
+end
+
+
+rule "Sovemodus av"
+when 
+    Item sovemodus changed from ON to OFF
+then
+    postUpdate(nattlys, OFF)
+    sendCommand(stueLittKaldere, OFF)
+
+    postUpdate(sovemodus2, OFF)
+    // Varmeovn soverom av? Nei ikke det (Zhen!:)
+    //sendCommand(serialmultifunction_on_off_code_8dac37af_switch, OFF)
+    sendCommand(soveromLyd, OFF)
+    //sendCommand(alarm, OFF)
+    
+    executeCommandLine("/home/fa2k/bin/kill-alarm.sh@@" + alarmFil)
+    
+    postUpdate(lysNiv, dagLysNiv.state as Number)
+    postUpdate(tvLys, dagLysNiv.state as Number)
+    sendCommand(ganglys, ON)
+    sendCommand(stueLys, ON)
+    sendCommand(sovLys1paa, OFF)
+    sendCommand(sovLys2paa, OFF)
+    sendCommand(soveromLys, ON)
+    //sendCommand(lgtvserial_lgtv_d51c3883_power, ON)
+    //sendCommand(rotelra1x_amp_12ceea8e_power, ON)
+    sendCommand(badmine, OFF)
+    // Stjerne
+    sendCommand(julelys, ON)
+    postUpdate(enStoOpp, OFF)
+    postUpdate(kjorPcAlltid, OFF)
+end
+
+rule "Sett alarm"
+when
+    Item stOppTid received update or
+    Item alarm changed to ON or
+    System started
+then
+    // Alarm med bare minutter, eksempel: https://github.com/openhab/openhab/wiki/AlarmClock
+    alarmTid = now.withTimeAtStartOfDay()
+    alarmTid = alarmTid.plusMinutes((stOppTid.state as Number).intValue())
+    if (alarmTid.isBefore(now)) {
+        alarmTid = alarmTid.plusDays(1)
+    }
+    preAlarmTid = alarmTid.minusMinutes(25)
+    postUpdate(stOppVis, alarmTid.toLocalTime().toString("HH:mm"))
+    preAlarmTrig = false
+    alarmFlagg = false
+end
+
+rule "Alarmen gaare?"
+when 
+    Time cron "0 * * * * ?"
+then
+    if (!preAlarmTrig && alarm.state == ON && sovemodus2.state == ON && now.isAfter(preAlarmTid)) {
+        preAlarmTrig = true
+        alarmFlagg = true
+        sendCommand(lifx_colorlight_D073D5016C1E_temperature, MORGEN_FARGTEMP)
+        sendCommand(lifx_colorlight_D073D5016C1E_color, dagLysNiv.state as Number)
+        sendCommand(skjermModus, new StringType("KLOKKE"))
+    }
+    else if (preAlarmTrig && alarm.state == ON && sovemodus2.state == ON && now.isAfter(preAlarmTid.plusMinutes(5))) {
+        preAlarmTid = preAlarmTid.plusDays(1)
+        sendCommand(sovLys1niv, dagLysNiv.state as Number)
+        sendCommand(sovLys1overgang, new DecimalType(2500000) as Number)
+        sendCommand(sovLys1paa, ON)
+        if (sovLys2paa.state == ON) {
+            sendCommand(sovLys2overgang, new DecimalType(2500000) as Number)
+        }
+        sendCommand(sovLys2niv, dagLysNiv.state as Number)
+        sendCommand(sovLys2overgang, new DecimalType(2500000) as Number)
+        sendCommand(sovLys2paa, ON)
+    }
+    else if (alarm.state == ON && now.isAfter(alarmTid)) {
+        if (sovemodus.state == ON && alarmLyd.state == ON) {
+            executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@" + alarmFil)
+        }
+        preAlarmTrig = false
+        postUpdate(alarm, OFF)
+    }
+end
+
+rule "nattlys"
+when
+    Item nattlys received command
+then
+    if ((sovemodus2.state == ON || sovemodus.state == ON) && enStoOpp.state != ON) {
+        if (receivedCommand == ON) {
+            sendCommand(lifx_colorlight_D073D5016C1E_color, ON)
+            sendCommand(ganglys, ON)
+            sendCommand(stueLys, ON)
+            sendCommand(serialmultifunction_on_off_code_d0fb8276_switch, ON) // Juletre
+            //sendCommand(sovLys1paa, ON)
+            //sendCommand(sovLys2paa, ON)
+        }
+        else if (receivedCommand == OFF && enStoOpp.state != ON) {
+            sendCommand(ganglys, OFF)
+            sendCommand(stueLys, OFF)
+            sendCommand(rotelra1x_amp_12ceea8e_power, OFF)
+            sendCommand(serialmultifunction_on_off_code_d0fb8276_switch, OFF) // Juletre
+            sendCommand(lgtvserial_lgtv_d51c3883_power, OFF)
+            if (sovemodus2.state == ON) {
+                sendCommand(soveromLys, OFF)
+            }
+        }
+    }
+end
+
+
+rule "ut av senga"
+when
+    Item sovPir changed to ON
+then
+    if (sovemodus.state == ON && sovemodus2.state != ON) {
+        if (now.getHourOfDay() < 15 && now.getHourOfDay() >= 6) {       
+            sendCommand(sovemodus, OFF)
+        }
+    }
+    if (sovemodus.state == ON && sovemodus2.state == ON) {
+        if (alarmFlagg) {
+            sendCommand(sovemodus, OFF)
+        }
+    }
+end
+
+rule "en stå opp"
+when
+    Item enStoOpp received command
+then
+    if (receivedCommand == ON) {
+        sendCommand(soveromLys, OFF)
+        sendCommand(stueLys, ON)
+        sendCommand(ganglys, ON)
+        sendCommand(lgtvserial_lgtv_d51c3883_power, ON)
+    }
+    else if (receivedCommand == OFF) {
+        sendCommand(nattlys, OFF)
+    }
+end
+

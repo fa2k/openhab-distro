@@ -1,0 +1,277 @@
+var proxyTriggers = 0
+var sovNumTriggers = 0
+var editMode = false
+var holdDenPaa = false
+var long nattlysAvTid = 0
+
+rule "Sov proxy"
+when
+	Item sovProxy changed to ON
+then
+	if (sovemodus2.state == ON || sovemodus.state == ON) {
+		sendCommand(skjermModus, new StringType("KLOKKE"))
+	}
+	else if (sovemodus.state == ON) {
+		sendCommand(skjermModus, new StringType("KLOKKE"))
+	}
+	proxyTriggers++
+end
+
+rule "Sov proxy"
+when
+	Item sovProxy changed to OFF
+then
+	var delay = 5*1000
+	if (sovemodus2.state == ON) {
+		delay = 3000
+	}
+	Thread.sleep(delay)
+	proxyTriggers--
+	if (proxyTriggers <= 0 && !editMode) {
+		if (sovemodus2.state == ON) {
+			sendCommand(skjermModus, "OFF")
+		}
+		else if (sovemodus.state == ON) {
+			sendCommand(skjermModus, "OFF")
+		}
+	}
+end
+
+rule "Knapp 1"
+when
+    Item sovKnapp1 received command
+then
+    if (sovemodus2.state == ON) {
+        sendCommand(sovemodus2, OFF)
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/pip.wav")
+    }
+    else if (sovemodus.state == ON) {
+        sendCommand(sovemodus, OFF)
+    }
+    else if (ekstraLys.state == ON) {
+        sendCommand(ekstraLys, OFF)
+    }
+    else {
+        sendCommand(ekstraLys, ON)
+    }
+end
+
+rule "Knapp 2"
+when
+    Item sovKnapp2 received command
+then
+    if (sovemodus.state == OFF) {
+        sendCommand(sovemodus, ON)
+    }
+    else if (sovemodus2.state == OFF) {
+        sendCommand(sovemodus2, ON)
+    }
+    else if (sovLys1paa.state == ON || sovLys2paa.state == ON) {
+        sendCommand(sovLys1paa, OFF)
+        sendCommand(sovLys2paa, OFF)
+    }
+    else if (nattlys.state == ON) {
+        sendCommand(nattlys, OFF)
+    }
+    else {
+        sendCommand(nattlys, ON)
+    }
+end
+
+rule "Knapp 3"
+when
+    Item sovKnapp3 received command
+then
+    if (skjermModus.state.equals("ALARM")) {
+        sendCommand(skjermModus, new StringType("KLOKKE"))
+        sendCommand(alarm, ON)
+        editMode = false
+        sendCommand(sovProxy, ON)
+        Thread.sleep(2000)
+        sendCommand(sovProxy, OFF)
+    }
+    else if (alarm.state == ON) {
+        sendCommand(alarm, OFF)
+        sendCommand(skjermModus, new StringType("KLOKKE"))
+        sendCommand(sovProxy, ON)
+        Thread.sleep(2000)
+        sendCommand(sovProxy, OFF)
+    }
+    else {
+        sendCommand(skjermModus, new StringType("ALARM"))
+        sendCommand(alarm, ON)
+	    editMode = true
+    }
+end
+
+rule "Knapp 4"
+when
+    Item sovKnapp4 received command
+then
+    if (skjermModus.state.equals("ALARM")) {
+        postUpdate(stOppTid, new DecimalType((stOppTid.state as Number) + 15))
+        editMode = true
+    }
+    else if (sovemodus.state == ON) {
+        	sendCommand(sovLys1niv, INCREASE)
+        	sendCommand(sovLys2niv, INCREASE)
+	}
+	else if (soveromLys.state != ON) {
+	    sendCommand(soveromLys, ON)
+	}
+	//else if (ikkeSlavSovLys.state == ON) {
+    //    postUpdate(ikkeSlavSovLys, OFF)
+    //    sendCommand(soveromLys, OFF)
+    //    Thread.sleep(500)
+    //    sendCommand(soveromLys, ON)
+    //}
+    //else {
+    //     postUpdate(ikkeSlavSovLys, ON)
+    //}
+    else {
+        sendCommand(sovLys1paa, ON)
+        sendCommand(sovLys2paa, ON)
+    }
+end
+
+
+rule "Knapp 5"
+when
+    Item sovKnapp5 received command
+then
+    if (skjermModus.state.equals("ALARM")) {
+        postUpdate(stOppTid, new DecimalType((stOppTid.state as Number) - 15))
+        editMode = true
+    }
+    else if (sovemodus.state == ON) {
+        	sendCommand(sovLys1niv, DECREASE)
+        	sendCommand(sovLys2niv, DECREASE)
+	}
+	else if (soveromLys.state == OFF) {
+            sendCommand(stueLys, OFF)
+    }
+    else {
+        sendCommand(soveromLys, OFF)
+    }
+end
+
+rule "Stue pir paa"
+when
+    Item serialmultifunction_input_switch_0fb1b33b_state changed to ON
+then
+    if (sovemodus.state == ON) {
+        var cack = (now.getMillis()) - nattlysAvTid
+        if (cack > 400) {
+            if (party.state != ON) {
+                holdDenPaa = true
+            }
+            // Unngaa at det at lyset gor av slor po igjen lyset
+            sendCommand(nattlys, ON)
+        }
+    }
+end
+
+rule "Nattlys unngaa selvtrigger"
+when
+    Item stueLys received command
+then
+    nattlysAvTid = now.getMillis()
+end
+
+rule "Sov pir paa"
+when
+	Item sovPir changed to ON
+then
+    holdDenPaa = false
+    if (hjemme.state == ON) {
+        if (sovemodus2.state == ON && enStoOpp.state != ON) {
+            sendCommand(nattlys, ON)
+        }
+        else if (sovemodus.state == ON && enStoOpp.state != ON) {
+            if (now.getHourOfDay() > 20 || now.getHourOfDay() < 6) {
+                sendCommand(nattlys, ON)
+            }
+            else {
+                sendCommand(sovemodus2, OFF)
+            }
+        }
+        else if (ikkeSlavSovLys.state != ON) {
+            sendCommand(soveromLys, ON)
+            sendCommand(skjermModus, new StringType("KLOKKE"))
+        }
+    }
+    sovNumTriggers++
+end
+
+rule "Sov pir av"
+when
+	Item sovPir changed to OFF
+then
+	var delay = 2*60*1000
+	if (sovemodus.state == ON) {
+		// todo: mindre naar man har en til pir
+		delay = 10*1000
+	}
+	Thread.sleep(delay)
+	sovNumTriggers--
+	if (sovNumTriggers <= 0) {
+		if (sovemodus.state == ON && !holdDenPaa) { 
+			sendCommand(nattlys, OFF)
+		}
+		else if (sovemodus.state == OFF && ikkeSlavSovLys.state != ON) {
+			sendCommand(soveromOvergang, 5000)
+			sendCommand(soveromLys, OFF)
+		}
+	}
+end
+
+rule "Alarm dot"
+when
+    Item alarm changed to ON 
+then
+    sendCommand(alarmFlagg, ON)
+    executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/pip.wav")
+end
+
+rule "Alarm dot 2"
+when
+    Item alarm changed to OFF
+then
+    sendCommand(alarmFlagg, OFF)
+end
+
+rule "Alarm time updated"
+when
+    Item stOppTid received update
+then
+    sendCommand(skjermAlarmTid, stOppTid.state as Number)
+end
+
+rule "konsol startup"
+when
+    Item sovStartup received command
+then
+    sendCommand(skjermAlarmTid, stOppTid.state as Number)
+    sendCommand(alarmFlagg, alarm.state)
+end
+
+rule "lyspo"
+when
+    Item sovLys1niv received command
+then
+    if (receivedCommand == INCREASE) {
+        postUpdate(sovLys1paa, ON)
+    }
+end
+
+
+rule "lyspo2"
+when
+    Item sovLys2niv received command
+then
+    if (receivedCommand == INCREASE) {
+        postUpdate(sovLys2paa, ON)
+    }
+end
+
+

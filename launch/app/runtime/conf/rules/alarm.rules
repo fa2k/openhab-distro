@@ -1,0 +1,35 @@
+var multiTrig = new DateTime(now)
+
+rule "brannalarm"
+when
+    Item serialmultifunction_input_switch_3ab02c31_state changed to OFF
+then
+    if (multiTrig.minusMinutes(1).isBefore(now)) {
+        executeCommandLine("pushover.py@@ALARM: Brann oppdaget! " + now.toLocalTime().toString("HH:mm") + "@@2")
+        multiTrig = new DateTime(now)
+        executeCommandLine("/home/fa2k/bin/brannalarm.sh")
+        sendCommand(stueLys, ON)
+        sendCommand(ganglys, ON)
+        sendCommand(soveromLys, ON)
+        var lev = new PercentType(100)
+        sendCommand(lysNiv, lev)
+        sendCommand(skjermModus, new StringType("KLOKKE"))
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+        executeCommandLine("paplay@@-d@@tunnel.sovpi.local.alsa_output.platform-soc_audio.analog-stereo@@/home/fa2k/misc/loud_beep.wav")
+    }
+end
+
+rule "alarm inne"
+when
+    Item serialmultifunction_input_switch_0fb1b33b_state received command or
+    Item sovPir changed to ON
+then
+    if (hjemme.state == OFF) {
+        executeCommandLine("pushover.py@@ALARM: Bevegelse oppdaget! " + now.toLocalTime().toString("HH:mm") + "@@1")
+    }
+end
+

@@ -1,0 +1,84 @@
+
+
+rule "store knapp"
+when
+    Item serialmultifunction_code_receiver_57b6328c_code_input received command
+then
+                //var state = serialmultifunction_code_receiver_57b6328c_code_input.state.toString()
+                var String state = receivedCommand.toString()
+
+                if (state.equals("00929D3600080100")) { // Liten knapp 1 på
+                    sendCommand(gjeldendeVolum, INCREASE)
+                }
+                else if (state.equals("00929D3600080000")) { // Liten knapp 1 av
+                    sendCommand(gjeldendeVolum, DECREASE)
+                }
+                else if (state.equals("00929D3600090100")) { // Liten knapp 2 på
+                    if (kino.state == ON) {
+                        sendCommand(kino, OFF)
+                    }
+                    else if (stueLys.state == OFF) {
+                        sendCommand(stueLys, ON)
+                        sendCommand(ganglys, ON)
+                    }
+                    else if (ekstraLys.state == OFF) {
+                        sendCommand(ekstraLys, ON)
+                    }
+                    else {
+                        sendCommand(leselys, ON)
+                        sendCommand(ekstraLys, OFF)
+                    }
+                }
+                else if (state.equals("00929D3600090000")) { // Liten knapp 2 av
+                    if (leselys.state == ON) {
+                        sendCommand(leselys, OFF)
+                        sendCommand(ekstraLys, ON)
+                    }
+                    else if (ekstraLys.state == ON) {
+                        sendCommand(ekstraLys, OFF)
+                    }
+                    else if (stueLys.state == ON) {
+                        sendCommand(stueLys, OFF)
+                        sendCommand(ganglys, OFF)
+                    }
+                    else {
+                        sendCommand(kino, ON)
+                    }
+                }
+                else if (state.equals("00929D36000A0100")) { // Liten knapp 3 på
+                    sendCommand(soveromLys, ON)
+                }
+                else if (state.equals("00929D36000A0000")) { // Liten knapp 3 av
+                    sendCommand(soveromLys, OFF)
+                }
+                else if (state.equals("00929D36000B0100")) { // Liten knapp 4 på
+                    sendCommand(tvKontroll, ON)
+                }
+                else if (state.equals("00929D36000B0000")) { // Liten knapp 4 av
+                    sendCommand(tvKontroll, OFF)
+                }
+                else if (state.equals("00929D3600000101")) { // Liten knapp 5 på
+                    if (rotelra1x_amp_12ceea8e_power.state == ON) {
+                        if (rotelra1x_amp_12ceea8e_source.state == "opt1") {
+                            sendCommand(rotelra1x_amp_12ceea8e_source, "opt2")
+                        }
+                        else if (rotelra1x_amp_12ceea8e_source.state == "opt2") {
+                            sendCommand(rotelra1x_amp_12ceea8e_source, "usb")
+                        }
+                        else {
+                            sendCommand(rotelra1x_amp_12ceea8e_source, "opt1")
+                        }
+                    }
+                    else { 
+                        sendCommand(rotelra1x_amp_12ceea8e_power, ON)
+                    }
+                }
+                else if (state.equals("00929D3600000001")) { // Liten knapp 5 av
+                    if (rotelra1x_amp_12ceea8e_power.state == OFF) {
+                        sendCommand(gjeldendeMute, ON)
+                    }
+                    else { 
+                        sendCommand(rotelra1x_amp_12ceea8e_power, OFF)
+                    }
+                }
+end

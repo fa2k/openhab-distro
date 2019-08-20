@@ -1,0 +1,29 @@
+
+
+
+Switch sovLys1paa "Sov lys 1 power" {channel="mqtt:topic:a0cc65bd:sovLys1paa"}
+Dimmer sovLys1niv "Sov lys 1 niveau" {channel="mqtt:topic:a0cc65bd:sovLys1niv"}
+Switch sovLys2paa "Sov lys 2 power" {channel="mqtt:topic:a0cc65bd:sovLys2paa"}
+Dimmer sovLys2niv "Sov lys 2 niveau" {channel="mqtt:topic:a0cc65bd:sovLys2niv"}
+Number sovTemp "Temperetur soverom [%.1f]" {channel="mqtt:topic:a0cc65bd:sovTemp"}
+Number skjermNiv "Skjerm lysniveau" {channel="mqtt:topic:a0cc65bd:skjermNiv"}
+
+Switch gangKnapp "Gang knapp" {channel="mqtt:topic:6ccdd575:gangKnapp"}
+Contact inngangsdoor "Inngangsdør" {channel="mqtt:topic:6ccdd575:inngangsdoor"}
+
+Contact barskapDoor "Skapdør" {channel="mqtt:topic:2b5c1b89:barskapDoor"}
+Switch sovKnapp1 "Sov knapp 1" {channel="mqtt:topic:6ccdd575:sovKnapp1"}
+Switch sovKnapp2 "Sov knapp 2" {channel="mqtt:topic:6ccdd575:sovKnapp2"}
+Switch sovKnapp3 "Sov knapp 3" {channel="mqtt:topic:6ccdd575:sovKnapp3"}
+Switch sovKnapp4 "Sov knapp 4" {channel="mqtt:topic:6ccdd575:sovKnapp4"}
+Switch sovKnapp5 "Sov knapp 5" {channel="mqtt:topic:6ccdd575:sovKnapp5"}
+Switch sovStartup "Sov Oppstart" {channel="mqtt:topic:6ccdd575:sovStartup"}
+Switch sovProxy "Sov proximity" {channel="mqtt:topic:6ccdd575:sovProxy"}
+Switch sovPir "Sov PIR" {channel="mqtt:topic:6ccdd575:sovPir"}
+
+Number skjermAlarmTid "Alarm tid" {channel="mqtt:topic:6ccdd575:skjermAlarmTid"}
+Switch alarmFlagg "Alarmflagg" {channel="mqtt:topic:6ccdd575:alarmFlagg"}
+String skjermModus "Skjerm modus" {channel="mqtt:topic:6ccdd575:skjermModus"}
+
+Number sovLys1overgang "Sov lys 1 overgang" {channel="mqtt:topic:6ccdd575:sovLys1overgang"}
+Number sovLys2overgang "Sov lys 2 overgang" {channel="mqtt:topic:6ccdd575:sovLys2overgang"}

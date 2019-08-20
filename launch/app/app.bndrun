@@ -62,7 +62,17 @@ feature.openhab-model-runtime-all: \
 	bnd.identity;id='org.openhab.core.ui.icon',\
 	bnd.identity;id='org.openhab.transform.map',\
 	bnd.identity;id='org.openhab.ui.iconset.classic',\
-	bnd.identity;id='org.openhab.ui.restdocs'
+	bnd.identity;id='org.openhab.ui.restdocs',\
+	bnd.identity;id='org.openhab.binding.mqtt',\
+	bnd.identity;id='org.openhab.binding.rotelra1x',\
+	bnd.identity;id='org.openhab.binding.folding',\
+	bnd.identity;id='org.openhab.binding.yeelight',\
+	bnd.identity;id='org.openhab.binding.dmx',\
+	bnd.identity;id='org.openhab.binding.lifx',\
+	bnd.identity;id='org.openhab.binding.lgtvserial',\
+	bnd.identity;id='org.openhab.binding.serialmultifunction',\
+	bnd.identity;id='org.openhab.binding.artnet',\
+	bnd.identity;id='org.openhab.binding.mqtt.generic'
 
 -runfw: org.eclipse.osgi
 -runee: JavaSE-1.8
@@ -211,4 +221,18 @@ feature.openhab-model-runtime-all: \
 	org.threeten.extra;version='[1.4.0,1.4.1)',\
 	slf4j.api;version='[1.7.25,1.7.26)',\
 	tec.uom.lib.uom-lib-common;version='[1.0.3,1.0.4)',\
-	tec.uom.se;version='[1.0.10,1.0.11)'
+	tec.uom.se;version='[1.0.10,1.0.11)',\
+	slf4j.log4j12;version='[1.7.2,1.7.3)',\
+	com.neuronrobotics.nrjavaserial;version='[3.15.0,3.15.1)',\
+	org.eclipse.paho.client.mqttv3;version='[1.2.1,1.2.2)',\
+	org.openhab.binding.dmx;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.folding;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.mqtt;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.rotelra1x;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.yeelight;version='[2.5.0,2.5.1)',\
+	org.openhab.core.io.transport.mqtt;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.lifx;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.lgtvserial;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.serialmultifunction;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.artnet;version='[2.5.0,2.5.1)',\
+	org.openhab.binding.mqtt.generic;version='[2.5.0,2.5.1)'

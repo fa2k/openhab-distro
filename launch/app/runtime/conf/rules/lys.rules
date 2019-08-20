@@ -1,0 +1,275 @@
+var lysKmd = new PercentType(100) 
+var MIN_LYS = 14
+
+rule "Sovemodus av (lys)"
+when 
+    Item sovemodus2 changed from ON to OFF
+then
+    postUpdate(autoLys, ON)
+end
+
+
+rule "Auto Lysniveau"
+when
+	Time cron "30 */3 * * * ?" or
+	Item autoLys changed to ON
+then
+	if (autoLys.state == ON) {
+		var klokka = new DateTime(now)
+		var sekund = klokka.getSecondOfDay()
+	
+		var FULL_SLUTT = 17
+		var NULL_START = 22.5
+        var MIDT_TIME = 13
+		// Variasjon med 1 enhet over:
+		var omr = (NULL_START - FULL_SLUTT) * 3600
+		var justerPrSek = 1.0 / omr
+		// Antall enheter ved kl 12 (litt over 1.0):
+		var toppkl12 = 1.0 + ((FULL_SLUTT - MIDT_TIME) * 3600.0 * justerPrSek)
+		
+		// Sekunder før / etter midt time
+		var tidParameter = Math.abs(3600*MIDT_TIME - sekund)
+		var lysBr = Math.min(1.0, Math.max(toppkl12 - tidParameter * justerPrSek, 0))
+		var lysstyrke = Math.max(lysBr * 100.0, MIN_LYS)
+		
+        if (sovemodus.state == ON) {
+		    postUpdate(dagLysNiv, new PercentType(lysstyrke.intValue()))
+        }
+        else {
+		    postUpdate(lysNiv, new PercentType(lysstyrke.intValue()))
+        }
+	}
+end
+
+
+rule "Lysniveau manuell"
+when
+	Item lysNiv received command
+then
+	postUpdate(autoLys, OFF)
+end
+
+rule "Sett lysa"
+when
+	Item ekstraLys changed or
+	Item kino changed or
+	Item lysNiv changed or
+    Item stueLys changed to ON or
+    Item soveromLys changed to ON or
+    Item leselys changed or
+    Item enStoOpp changed
+then
+    var lysstyrke = (lysNiv.state as Number).doubleValue()
+    var fargeTemp = Math.min(100, 125 - lysstyrke*1.25)
+    
+    if (ekstraLys.state == ON) {
+        lysstyrke = Math.min(100.0, lysstyrke + 30)
+    }
+
+    if (enStoOpp.state == ON) {
+        lysstyrke = (dagLysNiv.state as Number).doubleValue()
+    }
+
+    // Sett TV lys før sjekk for kino modus
+    var tvLysDeci = Math.floor(lysstyrke / 10.0)
+    // Rund av til nærmeste 10
+    if (kino.state == ON) {
+        tvLysDeci = Math.min(tvLysDeci + 4, 10)
+    }
+    var tvNyLys = new PercentType((tvLysDeci*10.0) as int)
+    postUpdate(tvLys, tvNyLys)
+    if (lgtvserial_lgtv_d51c3883_power.state != OFF) {
+        if (!tvNyLys.equals(lgtvserial_lgtv_d51c3883_backlight.state)) {
+            sendCommand(lgtvserial_lgtv_d51c3883_backlight, tvNyLys)
+        }
+    }
+
+    if (kino.state == ON) {
+        lysstyrke = Math.min(30.0, lysstyrke)
+    }
+    
+    var tranny = new DecimalType(3000) as Number
+    lysKmd = new PercentType(lysstyrke as int) as PercentType
+    var fargeKmd = new PercentType(fargeTemp as int) as PercentType
+    sendCommand(sovLys1overgang, tranny)
+    sendCommand(sovLys1niv, lysKmd)
+    
+    sendCommand(sovLys2overgang, tranny)
+    sendCommand(sovLys2niv, lysKmd)
+    
+    if (soveromLys.state != OFF) {
+        sendCommand(lifx_colorlight_D073D5016C1E_temperature, fargeKmd)
+        sendCommand(lifx_colorlight_D073D5016C1E_color, lysKmd)
+    }
+
+    var lstue = lysKmd
+    if (leselys.state == ON) {
+        lstue = new PercentType(Math.min(100, lysstyrke + 40) as int) as PercentType
+    }
+    if (stueLys.state != OFF) {
+        sendCommand(lifx_colorlight_D073D5120452_temperature, fargeKmd)
+        sendCommand(lifx_colorlight_D073D5120452_color, lstue)
+    }
+    
+    if (hjemme.state == ON && ganglys.state != OFF) {
+        sendCommand(yeelight_wonder_0x0000000005384e52_colorTemperature, lysKmd)
+        sendCommand(yeelight_wonder_0x0000000005384e52_color, lysKmd)
+    }
+
+
+    if (hjemme.state == ON && kino.state == OFF && (stueLys.state != OFF)) {
+        var hughes = new DecimalType(32 + 0.45 * lysstyrke)
+        var sat = new PercentType((90 -lysstyrke*0.68) as int)
+        var bright = new PercentType(Math.min(lysstyrke*0.95, 95) as int)
+        sendCommand(artnet_node_7212ca3b_color, new HSBType(hughes, sat, bright))
+
+        var PercentType sat2 = new PercentType(100)
+        var DecimalType hue2 = new DecimalType(6 * now.getMinuteOfHour())
+        var HSBType col2 = new HSBType(hue2, sat2, bright)
+        sendCommand(artnet_node_c892f059_color, col2)
+    }
+    
+    sendCommand(skjermNiv, lysKmd)
+
+    sendCommand(rotelra1x_amp_12ceea8e_brightness, lysKmd)
+
+    var tvFargeTempVerdi = 0
+    if (kino.state == ON) {
+        tvFargeTempVerdi = 1
+    }
+    else if (fargeTemp > 80) {
+        tvFargeTempVerdi = 2
+    }
+    else if (fargeTemp > 20) {
+        tvFargeTempVerdi = 1
+    }
+    var tvFt = new StringType(Integer.toString(tvFargeTempVerdi))
+    postUpdate(tvFargetemp, tvFt)
+    if (lgtvserial_lgtv_d51c3883_power.state != OFF) {
+        if (!tvFt.equals(lgtvserial_lgtv_d51c3883_color_temperature.state)) {
+            sendCommand(lgtvserial_lgtv_d51c3883_color_temperature, tvFt)
+        }
+    }
+end
+
+rule "Sovemodus paa (lys)"
+when 
+    Item sovemodus changed to ON
+then
+    sendCommand(lysNiv, new PercentType(4))
+end
+
+rule "TV var av"
+when
+    Item lgtvserial_lgtv_d51c3883_power changed to ON
+then
+    //executeCommandLine("xset@@dpms@@force@@on")
+	Thread.sleep(15000)
+	sendCommand(lgtvserial_lgtv_d51c3883_backlight, tvLys.state as PercentType)
+    sendCommand(lgtvserial_lgtv_d51c3883_color_temperature, tvFargetemp.state as StringType)
+    //executeCommandLine("xrandr@@-r@@60")
+end
+
+rule "TV kanal"
+when
+    Item lgtvserial_lgtv_d51c3883_input2 changed
+then
+    Thread.sleep(1500)
+    sendCommand(lgtvserial_lgtv_d51c3883_backlight, tvLys.state as PercentType)
+    sendCommand(lgtvserial_lgtv_d51c3883_color_temperature, tvFargetemp.state as StringType)
+end
+
+
+rule "TV av"
+when
+	Item lgtvserial_lgtv_d51c3883_power changed to OFF
+then
+	//executeCommandLine("xset@@dpms@@force@@off")
+	postUpdate(kino, OFF)
+end
+
+
+rule "Forsterker slås på"
+when
+	Item rotelra1x_amp_12ceea8e_power changed to ON
+then
+	Thread.sleep(6000)
+	sendCommand(rotelra1x_amp_12ceea8e_brightness, lysKmd)
+end
+
+rule "lys gang"
+when 
+    Item ganglys received command
+then
+    sendCommand(yeelight_wonder_0x0000000005384e52_color, receivedCommand)
+end
+
+
+rule "Alle lys po stue"
+when 
+    Item stueLys received command
+then
+    postUpdate(leselys, OFF)
+    if (receivedCommand == OFF) {  // Light turn on is done in set light
+        sendCommand(lifx_colorlight_D073D5120452_color, OFF)
+    }
+    if (receivedCommand == ON && kino.state != ON) {
+        // Settes av lysnivå regel
+    }
+    else {
+        sendCommand(artnet_node_c892f059_color, receivedCommand)
+        sendCommand(artnet_node_7212ca3b_color, receivedCommand)
+    }
+end
+
+rule "Alle lys po soverom"
+when 
+    Item soveromLys received command
+then
+    if (sovemodus.state == ON || receivedCommand == OFF) {
+        sendCommand(sovLys1paa, receivedCommand)
+        sendCommand(sovLys2paa, receivedCommand)
+    }
+    if (receivedCommand == OFF) {
+        sendCommand(lifx_colorlight_D073D5016C1E_color, OFF)
+        sendCommand(skjermModus, "OFF")
+    } else if (sovemodus.state != ON) {
+        sendCommand(skjermModus, "KLOKKE")
+    }
+    //postUpdate(soveromLys, receivedCommand)
+end
+
+rule "overgang soverom"
+when
+    Item soveromOvergang received command
+then
+    sendCommand(lifx_colorlight_D073D5016C1E_transition_time, receivedCommand)
+    sendCommand(sovLys1overgang, receivedCommand)
+    sendCommand(sovLys2overgang, receivedCommand)
+end
+
+
+rule "barskap lys"
+when 
+    Item barskapDoor changed to OPEN
+then
+    sendCommand(artnet_node_fec000a8_color, 31.0,100.0,100.0)
+end
+
+rule "barskap lys av"
+when 
+    Item barskapDoor changed to CLOSED
+then
+    sendCommand(artnet_node_fec000a8_color, OFF)
+end
+
+rule "stjerne"
+when
+    Item julelys received command
+then
+    // Stjerne
+    sendCommand(serialmultifunction_on_off_code_7efa7ce6_switch, receivedCommand)
+    // Juletre
+    sendCommand(serialmultifunction_on_off_code_d0fb8276_switch, receivedCommand)
+end
+
